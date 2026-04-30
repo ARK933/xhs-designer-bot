@@ -1,5 +1,8 @@
 name: Daily Xiaohongshu Scraper
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     - cron: '0 2 * * *'
@@ -29,7 +32,7 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASS: ${{ secrets.SENDER_PASS }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
-        run: python scraper.py
+        run: python scraper.py 2>&1 | tee scraper.log
       
       - name: Upload logs
         if: always()
@@ -38,4 +41,3 @@ jobs:
           name: scraper-logs
           path: scraper.log
           retention-days: 7
-
