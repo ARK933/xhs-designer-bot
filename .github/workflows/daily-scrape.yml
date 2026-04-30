@@ -33,11 +33,9 @@ jobs:
       
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: uses: actions/upload-artifact@v4
         with:
           name: scraper-logs
           path: scraper.log
           retention-days: 7
-- uses: actions/checkout@v4
-- uses: actions/setup-python@v4
-- uses: actions/upload-artifact@v4  # ✅ 已更新
+
