@@ -27,17 +27,27 @@ jobs:
           pip install -r requirements.txt
           playwright install chromium
       
+      - name: Debug - Check secrets
+        run: |
+          echo "SENDER_EMAIL is set: ${{ secrets.SENDER_EMAIL != '' }}"
+          echo "SENDER_PASS is set: ${{ secrets.SENDER_PASS != '' }}"
+          echo "RECEIVER_EMAIL is set: ${{ secrets.RECEIVER_EMAIL != '' }}"
+      
       - name: Run scraper
         env:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASS: ${{ secrets.SENDER_PASS }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
-        run: python scraper.py 2>&1 | tee scraper.log
+        run: |
+          python scraper.py || echo "Scraper exited with error code $?"
       
-      - name: Upload logs
+      - name: Check if log exists
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scraper-logs
-          path: scraper.log
-          retention-days: 7
+        run: |
+          ls -la
+          if [ -f "scraper.log" ]; then
+            echo "Log file found"
+            cat scraper.log
+          else
+            echo "Log file not found"
+          fi
