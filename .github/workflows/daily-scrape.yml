@@ -5,8 +5,8 @@ env:
 
 on:
   schedule:
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+    - cron: '0 2 * * *'  # 每天 UTC 2:00 (北京时间 10:00)
+  workflow_dispatch:     # 手动触发
 
 jobs:
   scrape:
@@ -14,24 +14,41 @@ jobs:
     timeout-minutes: 30
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
       
-      - name: Install dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+      
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install chromium
+          playwright install-deps chromium
       
-      - name: Debug - Check secrets
+      - name: Verify secrets
         run: |
-          echo "SENDER_EMAIL is set: ${{ secrets.SENDER_EMAIL != '' }}"
-          echo "SENDER_PASS is set: ${{ secrets.SENDER_PASS != '' }}"
-          echo "RECEIVER_EMAIL is set: ${{ secrets.RECEIVER_EMAIL != '' }}"
+          if [ -z "${{ secrets.SENDER_EMAIL }}" ]; then
+            echo "❌ Error: SENDER_EMAIL secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SENDER_PASS }}" ]; then
+            echo "❌ Error: SENDER_PASS secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.RECEIVER_EMAIL }}" ]; then
+            echo "❌ Error: RECEIVER_EMAIL secret is not set"
+            exit 1
+          fi
+          echo "✅ All secrets are configured"
       
       - name: Run scraper
         env:
@@ -39,35 +56,11 @@ jobs:
           SENDER_PASS: ${{ secrets.SENDER_PASS }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         run: |
-          python scraper.py || echo "Scraper exited with error code $?"
+          python scraper.py
+        continue-on-error: true
       
-      - name: Check if log exists
+      - name: Check execution status
         if: always()
         run: |
+          echo "Workflow execution completed"
           ls -la
-          if [ -f "scraper.log" ]; then
-            echo "Log file found"
-            cat scraper.log
-          else
-            echo "Log file not found"
-          fi
-if __name__ == "__main__":
-    logger.info("Starting Xiaohongshu scraper...")
-    results = scrape_xhs()
-    logger.info(f"Found {len(results)} results")
-    send_mail(results)
-    logger.info("Scraper completed")
-    import logging
-
-import logging
-
-# Configure logging with file output
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('scraper.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
