@@ -38,3 +38,6 @@ jobs:
           name: scraper-logs
           path: scraper.log
           retention-days: 7
+- uses: actions/checkout@v4
+- uses: actions/setup-python@v4
+- uses: actions/upload-artifact@v4  # ✅ 已更新
